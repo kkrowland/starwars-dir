@@ -2,7 +2,12 @@ import requests
 import json
 import streamlit as st
 import time
-
+import logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename='info.log', encoding='utf-8', level=logging.DEBUG, 
+                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S'
+                )
 CONST_BASEURL = 'https://swapi.dev/api/'
 
 # Function Name: getDataList()
@@ -27,18 +32,17 @@ def getDataList(url, sesh, results, resultsMap, identifier):
     if (r.status_code == 200):
         data = json.loads(r.text)
         next = data['next']
-        print("Next value: " + str(next))
         results += data['results']
     else:
         # Request failed, log a generic message and the accompanying error code for trouble shooting. 
-        print('Could not retrieve data. ErrCode: ' + str(r.status_code))
+        logger.info('Could not retrieve data. ErrCode: ' + str(r.status_code))
         return 0
 
 
     if next != None:
         # Recursive part of the function. Re-use both the running list and the session to reduce
         # run-time and memory usage. 
-        print("Fetching next character page...")
+        logger.info("Fetching next character page...")
         getDataList(next, sesh, results, resultsMap, identifier)
     else:
         # Assign the final list. 
@@ -47,7 +51,7 @@ def getDataList(url, sesh, results, resultsMap, identifier):
 # Function Name: createDataMap()
 # Arguments:     dataList: list
 #                dataMap: hash map
-# Returns:       n/a
+# Returns:       none
 # Purpose:       This function will take the entire master list of data
 # retrieved from the API and create a master hash table of it, where the 
 # key is the url for that particular piece of data and the value is 
@@ -66,7 +70,7 @@ def createDataMap(dataList, dataMap):
 # Function Name: replaceURLS()
 # Arguments:     character: dictionary
 #                dataMap: hash map
-# Returns:       n/a
+# Returns:       none
 # Purpose:       Iterate though each key/value pair within character. If a value
 # contains the base url (https://swapi.dev/api/) then, using the entire value as 
 # a key lookup in dataMap, we locate the name (or title in the case of movies)
@@ -116,6 +120,8 @@ def sortCharacters(characterList, dataMap):
         # First replace all URLs with their associated name or title
         replaceURLS(character, dataMap)
         species = character.get('species')
+
+        # Now we have the species, determine if a key needs to be added or updated
         if (index == 0 or (species[0] not in characterMap)):
             tempList = []
             tempList.append(character)
@@ -129,7 +135,14 @@ def sortCharacters(characterList, dataMap):
 
     return characterMap
 
-# Bring it all togethether
+# Function Name: generateData()
+# Arguments:     none
+# Returns:       characterMap: hash map
+# Purpose:       This function defines the urls needed to make requests to 
+# in order to compile all necessary info to eventually display character details. 
+# First we query all pages necessary, then we create a master hashMap, and finally we
+# sort the data and return a characterMap, where the key is the species and the
+# value is a list of characters that are of that species.
 def generateData():
     # Dict of URLS needed to fill in all data for characters
     urls = {
@@ -150,7 +163,7 @@ def generateData():
                 getDataList(url, fetchSesh, resultsList, results, identifier)
 
         except Exception as e:
-            print(f"An error occurred: {e}")
+            logger.info(f"An error occurred: {e}")
 
     # Compile master hash map of URLs/Names
     for identifier, data in results.items():
@@ -162,6 +175,14 @@ def generateData():
 
     return characterMap
 
+# Function Name: runStreamlit()
+# Arguments:     none
+# Returns:       none
+# Purpose:       This function is the show runner.First it will display a splash page
+# complete with a loading wheel. Once generateData() finishes, a series of collapsed 
+# dropdowns will appear, each labeled with a species. Clicking on that dropdown will
+# display all the characters of that species. This saves on screen real esate and
+# eliminates the need to re-gather data in order to re-draw the screen.  
 def runStreamlit():
     st.title("Star Wars Character Explorer")
     st.subheader("Displaying all characters organized by species (Collapsible)")
@@ -191,5 +212,6 @@ def runStreamlit():
     # Closing note
     st.write("### End of the character list")
 
+    # Remove success banner after a time
     time.sleep(3)
     status_placeholder.empty()
