@@ -19,9 +19,9 @@ as opposed to each individual URL that correlates to that specific item. The res
 sorted by the page category you might find that info. For example, items like "Luke" or "Darth Vader" exist under the key 'people', while items like 'Tatooine' or 'Hoth' exist under the key 'planets'.
 
 The main components of this application are the resultsMap, the dataMap, and the characterMap. 
-resultsMap - A hashmap where the value is a list of objects, and the key is the page those objects were requested from.
-dataMap - A master hashmap. The value is the URL unique to an object fetched from the API, and the name or title of that object. 
-characterMap - A hashmap of the final product of the application, which is one where the value is a list of objects and the key is the species of those objects. 
+- resultsMap - A hashmap where the value is a list of objects, and the key is the page those objects were requested from.
+- dataMap - A master hashmap. The value is the URL unique to an object fetched from the API, and the name or title of that object. 
+- characterMap - A hashmap of the final product of the application, which is one where the value is a list of objects and the key is the species of those objects. 
 
 Notable components of this application include:
 - Use of Session() and Brotli for compression to speed up api requests/responses
